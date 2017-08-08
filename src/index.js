@@ -2,52 +2,123 @@ import React from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
 
-//Change Square to a functional componement where it consist of only return function
-function Square(props) {
-  return (
-    <button className="square" onClick={props.onClick}>
-      {props.value}
-    </button>
-  );
-}
-
-class Board extends React.Component {
+class Game extends React.Component {
   constructor() {
     super();
     this.state = {
-      squares: Array(9).fill(null),
+      history: [
+        {
+          squares: Array(9).fill(null)
+        }
+      ],
+      stepNumber: 0,
       xIsNext: true
     };
   }
 
   handleClick(i) {
-    const squares = this.state.squares.slice();
-    // console.log("squares i", squares);
+    // let history = this.state.history;
+    //get history up to stepNumber
+    const history = this.state.history.slice(0, this.state.stepNumber + 1);
+    const current = history[history.length - 1];
+    //make copy of current history of game
+    const squares = current.squares.slice();
+    console.log("history", history);
+    console.log("current", current.squares);
+
+    //stop handleClick if winner is found
     if (calculateWinner(squares) || squares[i]) {
       return;
     }
 
+    //combine history of object squares
+    let concat = history.concat([
+      {
+        squares: squares
+      }
+    ]);
+
+    //set square at index based on xIsNext boolean
     squares[i] = this.state.xIsNext ? "X" : "O";
-    this.setState({ squares: squares, xIsNext: !this.state.xIsNext });
+
+    console.log("squares", squares);
+    console.log("concat ", concat);
+
+    this.setState({
+      history: concat,
+      xIsNext: !this.state.xIsNext,
+      stepNumber: history.length
+    });
   }
-  renderSquare(i) {
-    return <Square value={this.state.squares[i]} onClick={() => this.handleClick(i)} />;
+
+  jumpTo(step) {
+    this.setState({
+      stepNumber: step,
+      xIsNext: step % 2 === 0
+    });
+  }
+
+  componentDidMount() {
+    // console.log("mount history", this.state.history);
   }
 
   render() {
-    const winner = calculateWinner(this.state.squares);
+    const history = this.state.history;
+    // const current = history[history.length - 1];
+    const current = history[this.state.stepNumber];
+    const winner = calculateWinner(current.squares);
+    const moves = history.map((step, move) => {
+      //Description of history
+      const desc = move ? "Move #" + move : "Game start";
+      return (
+        <li key={move}>
+          <a href="#" onClick={() => this.jumpTo(move)}>
+            {desc}
+          </a>
+        </li>
+      );
+    });
+
     let status;
+
     if (winner) {
       status = "Winner: " + winner;
     } else {
       status = "Next player: " + (this.state.xIsNext ? "X" : "O");
     }
+
+    return (
+      <div className="game">
+        <div className="game-board">
+          {/* Always render the current game board history */}
+          <Board squares={current.squares} onClick={i => this.handleClick(i)} />
+        </div>
+        <div className="game-info">
+          <div>
+            {status}
+          </div>
+          <ol>
+            {moves}
+          </ol>
+        </div>
+      </div>
+    );
+  }
+}
+
+class Board extends React.Component {
+  renderSquare(i) {
+    return <Square value={this.props.squares[i]} onClick={() => this.props.onClick(i)} />;
+  }
+
+  render() {
     return (
       <div>
         <div className="status">
-          {status}
+          {/* {status} */}
         </div>
         <div className="board-row">
+          {/* render square based on index passed in */}
           {this.renderSquare(0)}
           {this.renderSquare(1)}
           {this.renderSquare(2)}
@@ -67,24 +138,13 @@ class Board extends React.Component {
   }
 }
 
-class Game extends React.Component {
-  render() {
-    return (
-      <div className="game">
-        <div className="game-board">
-          <Board />
-        </div>
-        <div className="game-info">
-          <div>
-            {/* status */}
-          </div>
-          <ol>
-            {/* TODO */}
-          </ol>
-        </div>
-      </div>
-    );
-  }
+//Change Square to a functional componement where it consist of only return function
+function Square(props) {
+  return (
+    <button className="square" onClick={props.onClick}>
+      {props.value}
+    </button>
+  );
 }
 
 // ========================================
